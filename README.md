@@ -1,5 +1,19 @@
 # Game PC Checker
 
+## Скачать готовую программу (Windows x64)
+
+Готовые сборки лежат в **[GitHub Releases](https://github.com/ljosefl/GamePcChecker/releases)** (исходный код в репозитории — без больших бинарников).
+
+| | |
+|:---|:---|
+| **Последний релиз** | https://github.com/ljosefl/GamePcChecker/releases/latest |
+| **Прямая ссылка на архив** (self-contained, после публикации релиза с этим файлом) | https://github.com/ljosefl/GamePcChecker/releases/latest/download/GamePcChecker-win-x64-selfcontained.zip |
+| **Версия в имени файла** (удобно для архива) | https://github.com/ljosefl/GamePcChecker/releases/download/v1.0.0/GamePcChecker-v1.0.0-win-x64-selfcontained.zip |
+
+Распакуйте zip и запустите **`GamePcChecker.exe`** из папки.
+
+---
+
 Настольное приложение для **Windows**, которое собирает сведения о железе и софт-среде и выдаёт **разбор пригодности ПК** под выбранный профиль игры. Из коробки поддерживаются **Path of Exile** и **Path of Exile 2**; оценки и рекомендации носят **эвристический** характер (не замена бенчмарку в самой игре).
 
 **Репозиторий:** [github.com/ljosefl/GamePcChecker](https://github.com/ljosefl/GamePcChecker)

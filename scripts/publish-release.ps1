@@ -35,8 +35,14 @@ $Zip = Join-Path $Root "artifacts\GamePcChecker-v$Ver-$Runtime-$(if ($SelfContai
 New-Item -ItemType Directory -Force -Path (Split-Path $Zip) | Out-Null
 if (Test-Path $Zip) { Remove-Item $Zip -Force }
 Compress-Archive -Path (Join-Path $OutDir "*") -DestinationPath $Zip
-Write-Host "Готово: $OutDir"
-Write-Host "Архив: $Zip"
+
+# Постоянное имя для README (releases/latest/download/...) и GitHub Release
+$StableZip = Join-Path $Root "artifacts\GamePcChecker-$Runtime-$(if ($SelfContained) { 'selfcontained' } else { 'framework-dependent' }).zip"
+Copy-Item -LiteralPath $Zip -Destination $StableZip -Force
+
+Write-Host ('Done output: ' + $OutDir)
+Write-Host ('Zip versioned: ' + $Zip)
+Write-Host ('Zip stable name: ' + $StableZip)
 Write-Host ""
-Write-Host "Framework-dependent: без --SelfContained — на целевых ПК нужен .NET Desktop Runtime той же основной версии."
-Write-Host "Self-contained: .\publish-release.ps1 -SelfContained — тяжелее, но без установки рантайма."
+Write-Host "Framework-dependent: without -SelfContained you need .NET Desktop Runtime on target PCs."
+Write-Host "Self-contained: heavier folder but no separate runtime install."

@@ -95,9 +95,6 @@ try {
 
 if (-not $rel) { throw "Не удалось получить объект релиза." }
 
-$uploadUrl = $rel.upload_url -replace '\{\?name,label\}', "?name=$([Uri]::EscapeDataString($zipName))"
-Write-Host "Загрузка $zipName ($([math]::Round((Get-Item $ZipPath).Length / 1MB, 1)) MB) ..."
-
 $uploadHeaders = @{
     Authorization = "Bearer $token"
     Accept        = "application/vnd.github+json"
@@ -105,6 +102,24 @@ $uploadHeaders = @{
     "Content-Type"  = "application/octet-stream"
 }
 
-Invoke-WebRequest -Uri $uploadUrl -Method Post -Headers $uploadHeaders -InFile $ZipPath -UseBasicParsing | Out-Null
+function Upload-Asset {
+    param([string]$Path, [string]$AssetName)
+    if (-not (Test-Path $Path)) {
+        Write-Host "Пропуск (нет файла): $Path"
+        return
+    }
+    $uploadUrl = $rel.upload_url -replace '\{\?name,label\}', "?name=$([Uri]::EscapeDataString($AssetName))"
+    $mb = [math]::Round((Get-Item $Path).Length / 1MB, 1)
+    Write-Host "Загрузка $AssetName (${mb} MB) ..."
+    Invoke-WebRequest -Uri $uploadUrl -Method Post -Headers $uploadHeaders -InFile $Path -UseBasicParsing | Out-Null
+}
+
+Upload-Asset -Path $ZipPath -AssetName $zipName
+
+$stableLocalName = "GamePcChecker-$Runtime-$(if ($SelfContained) { 'selfcontained' } else { 'framework-dependent' }).zip"
+$StableZipPath = Join-Path $Root "artifacts\$stableLocalName"
+if ((Test-Path $StableZipPath) -and ($stableLocalName -ne $zipName)) {
+    Upload-Asset -Path $StableZipPath -AssetName $stableLocalName
+}
 
 Write-Host "Готово: $($rel.html_url)"
