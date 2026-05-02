@@ -54,7 +54,14 @@ git push origin v1.0.0
 gh release create v1.0.0 artifacts/GamePcChecker-v1.0.0-win-x64-selfcontained.zip --title "Game PC Checker 1.0.0" --notes "Первая публичная сборка."
 ```
 
-Или через веб‑интерфейс: **Releases → Draft a new release → выбрать тег → приложить zip**.
+Через PowerShell и токен (**Fine-grained** или classic `repo`), после сборки zip:
+
+```powershell
+$env:GITHUB_TOKEN = "<ваш PAT>"
+.\scripts\create-github-release.ps1
+```
+
+Или через веб‑интерфейс: **Releases → Create a new release → выбрать тег `v1.0.0` → заголовок «Game PC Checker 1.0.0» → перетащить** `artifacts\GamePcChecker-v1.0.0-win-x64-selfcontained.zip`.
 
 ## Новый открытый репозиторий
 
