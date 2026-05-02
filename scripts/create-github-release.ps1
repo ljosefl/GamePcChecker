@@ -25,11 +25,14 @@ if (-not (Test-Path $ZipPath)) {
 
 $token = $env:GITHUB_TOKEN
 if ([string]::IsNullOrWhiteSpace($token)) {
+    $token = $env:GH_TOKEN
+}
+if ([string]::IsNullOrWhiteSpace($token)) {
     Write-Host @"
 GITHUB_TOKEN is not set.
 
 Create a Personal Access Token (repo / Contents write), then:
-  `$env:GITHUB_TOKEN = '<token>'
+  `$env:GITHUB_TOKEN = '<token>'   # or GH_TOKEN after gh auth login
   .\scripts\create-github-release.ps1
 
 Or attach zips manually at https://github.com/$Owner/$Repo/releases/new (tag $Tag).

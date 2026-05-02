@@ -1,0 +1,81 @@
+# Сборка self-contained zip и публикация GitHub Release по тегу v* (без локального PAT).
+# Если тег уже запушен без релиза: Actions -> Release -> Run workflow -> ввести тег, например v1.2.2
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Существующий тег (например v1.2.2)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Meta (ref + version)
+        id: meta
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:EVENT_NAME -eq 'workflow_dispatch') {
+            $r = $env:INPUT_TAG.Trim()
+          } else {
+            $r = $env:GITHUB_REF_NAME
+          }
+          if ([string]::IsNullOrWhiteSpace($r)) { throw 'Empty tag ref' }
+          $ver = $r.TrimStart('v')
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "ref=$r"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$ver"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish and zip
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ver = '${{ steps.meta.outputs.version }}'
+          $root = (Get-Location).Path
+          $proj = Join-Path $root 'src/GamePcChecker.App/GamePcChecker.App.csproj'
+          $out = Join-Path $root 'artifacts/publish-win-x64-selfcontained'
+          $art = Join-Path $root 'artifacts'
+          New-Item -ItemType Directory -Force -Path $art | Out-Null
+          if (Test-Path $out) { Remove-Item $out -Recurse -Force }
+          dotnet publish $proj -c Release -r win-x64 -o $out --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=None -p:DebugSymbols=false
+          $zipVer = Join-Path $art "GamePcChecker-v$ver-win-x64-selfcontained.zip"
+          $zipStable = Join-Path $art 'GamePcChecker-win-x64-selfcontained.zip'
+          if (Test-Path $zipVer) { Remove-Item $zipVer -Force }
+          Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zipVer
+          Copy-Item -LiteralPath $zipVer -Destination $zipStable -Force
+
+      - name: GitHub Release + assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.ref }}
+          name: Game PC Checker ${{ steps.meta.outputs.version }}
+          body_path: CHANGELOG.md
+          generate_release_notes: false
+          make_latest: true
+          files: |
+            artifacts/GamePcChecker-v*-win-x64-selfcontained.zip
+            artifacts/GamePcChecker-win-x64-selfcontained.zip
