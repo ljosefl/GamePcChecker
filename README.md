@@ -8,7 +8,9 @@
 |:---|:---|
 | **Последний релиз** | https://github.com/ljosefl/GamePcChecker/releases/latest |
 | **Прямая ссылка на архив** (self-contained, после публикации релиза с этим файлом) | https://github.com/ljosefl/GamePcChecker/releases/latest/download/GamePcChecker-win-x64-selfcontained.zip |
-| **Версия в имени файла** (удобно для архива) | https://github.com/ljosefl/GamePcChecker/releases/download/v1.0.0/GamePcChecker-v1.0.0-win-x64-selfcontained.zip |
+| **Версия в имени файла** (удобно для архива; замените тег при новой версии в `GamePcChecker.App.csproj`) | https://github.com/ljosefl/GamePcChecker/releases/download/v1.0.0/GamePcChecker-v1.0.0-win-x64-selfcontained.zip |
+
+Прямая ссылка **`…/latest/download/GamePcChecker-win-x64-selfcontained.zip`** начинает работать после того, как в **последнем** релизе на GitHub будет приложен файл с **точно таким именем** (его создаёт `scripts\publish-release.ps1 -SelfContained`).
 
 Распакуйте zip и запустите **`GamePcChecker.exe`** из папки.
 
