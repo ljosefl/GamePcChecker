@@ -68,14 +68,14 @@ jobs:
           Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zipVer
           Copy-Item -LiteralPath $zipVer -Destination $zipStable -Force
 
+      # Явные имена: glob v* на windows-runner иногда не находит файлы — без этого в Release только исходники.
       - name: GitHub Release + assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.ref }}
           name: Game PC Checker ${{ steps.meta.outputs.version }}
           body_path: CHANGELOG.md
-          generate_release_notes: false
           make_latest: true
           files: |
-            artifacts/GamePcChecker-v*-win-x64-selfcontained.zip
+            artifacts/GamePcChecker-v${{ steps.meta.outputs.version }}-win-x64-selfcontained.zip
             artifacts/GamePcChecker-win-x64-selfcontained.zip
