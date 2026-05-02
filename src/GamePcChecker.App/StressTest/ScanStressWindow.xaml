@@ -1,0 +1,190 @@
+<Window x:Class="GamePcChecker.App.StressTest.ScanStressWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
+        xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        Title="Стресс-тест при сканировании"
+        Width="720"
+        Height="780"
+        MinWidth="540"
+        MinHeight="620"
+        Background="{StaticResource BgWindow}"
+        FontFamily="Segoe UI Variable, Segoe UI"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanMinimize">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="200" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel x:Name="RunPanel" Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Style="{StaticResource H1}" Text="Стресс GPU + CPU (3 этапа)" />
+            <TextBlock Margin="0,6,0,0"
+                       Foreground="{StaticResource TextMuted}"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Text="Три фазы по 25 с: минимальная → средняя → максимальная нагрузка на шейдер. Параллельно — нагрузка на CPU (все логические ядра), как в полноценном стресс-тесте. Синтетика DirectX 11, не игра. Ниже — FPS, °C и мощность GPU (если драйвер отдаёт). При перегреве нажмите «Отмена»." />
+        </StackPanel>
+
+        <StackPanel x:Name="HeaderProgressPanel" Grid.Row="1" Margin="0,0,0,8">
+            <TextBlock x:Name="PhaseTitleText"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TextPrimary}"
+                       Text="Подготовка…" />
+            <ProgressBar x:Name="OverallProgress"
+                         Height="10"
+                         Margin="0,8,0,0"
+                         Maximum="75"
+                         Minimum="0"
+                         Value="0" />
+            <TextBlock x:Name="ProgressHintText"
+                       Margin="0,6,0,0"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMuted}"
+                       Text="0 / 75 с" />
+        </StackPanel>
+
+        <Border x:Name="DxBorder"
+                Grid.Row="2"
+                Background="#FF0D0D0D"
+                BorderBrush="{StaticResource BorderSubtle}"
+                BorderThickness="1"
+                CornerRadius="6">
+            <wfi:WindowsFormsHost x:Name="FormsHost">
+                <wf:Panel x:Name="DxPanel" BackColor="Black" />
+            </wfi:WindowsFormsHost>
+        </Border>
+
+        <!-- Датчики и графики (как в отдельном стресс-тесте) -->
+        <StackPanel x:Name="MetricsChartsPanel" Grid.Row="3" Margin="0,6,0,8">
+            <TextBlock x:Name="SensorLineText"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMuted}"
+                       TextWrapping="Wrap"
+                       Text="Датчики: инициализация…" />
+            <Border Margin="0,8,0,0"
+                    Padding="8,6"
+                    Background="#12000000"
+                    BorderBrush="{StaticResource BorderSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <Grid Height="112">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0,0,4,0"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextMuted}"
+                                   Text="FPS" />
+                        <Border Grid.Column="1"
+                                Background="#10000000"
+                                CornerRadius="2"
+                                ClipToBounds="True">
+                            <Canvas x:Name="FpsChartCanvas"
+                                    SizeChanged="OnChartCanvasSizeChanged">
+                                <Polyline x:Name="FpsPolyline"
+                                          Stroke="#FF4ADE80"
+                                          StrokeThickness="1.5"
+                                          SnapsToDevicePixels="True" />
+                            </Canvas>
+                        </Border>
+                    </Grid>
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0,0,4,0"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextMuted}"
+                                   Text="°C" />
+                        <Border Grid.Column="1"
+                                Background="#10000000"
+                                CornerRadius="2"
+                                ClipToBounds="True">
+                            <Canvas x:Name="TempChartCanvas"
+                                    SizeChanged="OnChartCanvasSizeChanged">
+                                <Polyline x:Name="CpuTempPolyline"
+                                          Stroke="#FF60A5FA"
+                                          StrokeThickness="1.5" />
+                                <Polyline x:Name="GpuTempPolyline"
+                                          Stroke="#FFFBBF24"
+                                          StrokeThickness="1.5" />
+                            </Canvas>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+            <TextBlock Margin="0,6,0,0"
+                       FontSize="11"
+                       Foreground="{StaticResource TextMuted}"
+                       Text="Легенда °C: CPU — голубой, GPU — янтарный. Мощность — только показания GPU (Вт), не БП из розетки." />
+        </StackPanel>
+
+        <StackPanel x:Name="FpsHintPanel" Grid.Row="4" Margin="0,0,0,8">
+            <TextBlock x:Name="FpsLineText"
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TextPrimary}"
+                       Text=""
+                       TextWrapping="Wrap" />
+            <TextBlock x:Name="HintLineText"
+                       Margin="0,6,0,0"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMuted}"
+                       TextWrapping="Wrap"
+                       Text="Идёт нагрузка на GPU и CPU…" />
+        </StackPanel>
+
+        <ScrollViewer x:Name="DonePanel"
+                      Grid.Row="5"
+                      Margin="0,0,0,10"
+                      VerticalScrollBarVisibility="Auto"
+                      Visibility="Collapsed">
+            <TextBlock x:Name="SummaryText"
+                       FontSize="13"
+                       Foreground="{StaticResource TextPrimary}"
+                       TextWrapping="Wrap" />
+        </ScrollViewer>
+
+        <Grid Grid.Row="6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="CancelBtn"
+                    Grid.Column="1"
+                    MinWidth="120"
+                    Margin="0,0,8,0"
+                    Click="OnCancelClick"
+                    Content="Отмена"
+                    Style="{StaticResource BtnGhost}" />
+            <Button x:Name="DoneBtn"
+                    Grid.Column="2"
+                    MinWidth="160"
+                    Click="OnDoneClick"
+                    Content="Продолжить"
+                    IsEnabled="False"
+                    Style="{StaticResource BtnPrimary}"
+                    Visibility="Collapsed" />
+        </Grid>
+    </Grid>
+</Window>

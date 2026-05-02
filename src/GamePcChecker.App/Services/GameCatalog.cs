@@ -9,7 +9,7 @@ public static class GameCatalog
         new(
             Key: "poe1",
             Title: "Path of Exile",
-            Notes: "Официальный минимум слабый; комфорт в эндгейме и при эффектах обычно ближе к «рекомендуемым» или выше. SSD сильно помогает загрузкам.",
+            Notes: "",
             MinRamGb: 8,
             RecRamGb: 16,
             MinCpuCores: 4,
@@ -26,7 +26,7 @@ public static class GameCatalog
         new(
             Key: "poe2",
             Title: "Path of Exile 2",
-            Notes: "Требования выше PoE1; на минимуме возможны просадки. Для стабильного FPS в актуальном контенте ориентируйтесь на блок «рекомендуемые» (Steam).",
+            Notes: "",
             MinRamGb: 8,
             RecRamGb: 16,
             MinCpuCores: 4,

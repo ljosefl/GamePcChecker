@@ -12,9 +12,9 @@
     <AssemblyName>GamePcChecker</AssemblyName>
     <Product>Game PC Checker</Product>
     <Description>Проверка ПК на соответствие играм (Path of Exile / PoE 2)</Description>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.2.2</Version>
+    <AssemblyVersion>1.2.2.0</AssemblyVersion>
+    <FileVersion>1.2.2.0</FileVersion>
     <Company>GamePcChecker</Company>
     <RepositoryUrl>https://github.com/ljosefl/GamePcChecker</RepositoryUrl>
     <PackageProjectUrl>https://github.com/ljosefl/GamePcChecker</PackageProjectUrl>
@@ -23,6 +23,9 @@
 
   <ItemGroup>
     <None Update="github-update.example.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\CHANGELOG.md" Link="CHANGELOG.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

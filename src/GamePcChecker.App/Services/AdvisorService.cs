@@ -10,7 +10,7 @@ public static class AdvisorService
         StressTestSessionRecord? stress = null)
     {
         var gpu = m.Gpus.Count > 0 ? m.Gpus[0] : null;
-        var (vol, free) = MaxFreeVolume(m);
+        var (storageHeading, vol, free) = ResolveStorageVolumeForReport(m);
 
         var gScore = gpu != null ? ScoringService.GpuScore(gpu.Name, gpu.VramGb) : 0.0;
         var cScore = ScoringService.CpuScore(m.CpuName, m.CpuCores, m.CpuLogical, m.CpuMhz);
@@ -55,19 +55,14 @@ public static class AdvisorService
         else
             verdicts.Add(new VerdictItem(VerdictSeverity.Bad, $"Место: на самом большом томе только {free:0} ГБ — нужно ≥ {game.StorageNeedGb} ГБ на одном разделе."));
 
-        if (game.SsdRecommended)
-            verdicts.Add(new VerdictItem(VerdictSeverity.Warn, "SSD для игры настоятельно желателен (меньше фризов при подгрузке зон)."));
+        AppendGameDriveVerdicts(verdicts, game, m.GameInstall);
 
-        AppendStressVerdicts(verdicts, stress);
+        AppendStressVerdicts(verdicts, stress, m.QuickGpuStress);
 
         var upgrades = BuildUpgrades(game, m, gpu, gScore, free, stress);
         var peripherals = BuildPeripherals(game, gpu, gScore);
 
-        var footnote =
-            "Оценки GPU/CPU условные. VRAM дискретной карты берётся из DXGI (драйвер NVIDIA / AMD / Intel), не из WMI — WMI часто ошибается для объёмов >4 ГБ. " +
-            "Итог по комфорту в игре — по FPS и стабильности кадра; стресс-тест — синтетика, не заменяет реальную сцену в «" + game.Title + "».";
-        if (stress != null)
-            footnote += " Учтена последняя сессия стресс-теста (длительность и FPS — ориентир стабильности под нагрузкой).";
+        var footnote = "";
 
         return new AnalysisReport(
             game.Title,
@@ -76,6 +71,7 @@ public static class AdvisorService
             cScore,
             gScore,
             gpu,
+            storageHeading,
             vol,
             free,
             verdicts,
@@ -85,54 +81,167 @@ public static class AdvisorService
             stress);
     }
 
-    private static void AppendStressVerdicts(
+    private static void AppendGameDriveVerdicts(
         List<VerdictItem> verdicts,
-        StressTestSessionRecord? stress)
+        GameProfileRecord game,
+        GameInstallProbeResult? gi)
     {
-        if (stress == null)
+        if (gi is not { Found: true })
         {
-            verdicts.Add(new VerdictItem(
-                VerdictSeverity.Ok,
-                "Стресс-тест (необязательно): пока не выполнялся — после сканирования можно запустить «Стресс-тест GPU»; отчёт обновится сам или нажмите «Сканировать» ещё раз."));
+            if (game.SsdRecommended)
+            {
+                verdicts.Add(new VerdictItem(
+                    VerdictSeverity.Warn,
+                    "SSD для игры настоятельно желателен (меньше фризов при подгрузке зон). Папку установки автоматически не нашли — если игра на HDD, перенос на SSD заметно ускорит загрузки."));
+            }
+
             return;
         }
 
         verdicts.Add(new VerdictItem(
             VerdictSeverity.Ok,
-            $"Стресс-тест учтён: {stress.ShortSummary}"));
+            $"Установка игры: {gi.InstallPath} · том {gi.DriveLetter}: ({gi.DiskKindLabel})."));
 
-        if (!stress.IsMeaningful)
-        {
-            verdicts.Add(new VerdictItem(
-                VerdictSeverity.Warn,
-                "Сессия стресс-теста короткая (< 20 с) — для выводов о стабильности повторите 2–5 минут."));
-            return;
-        }
-
-        if (stress.MinFps < 12)
+        if (game.SsdRecommended && !gi.IsSsdClass)
         {
             verdicts.Add(new VerdictItem(
                 VerdictSeverity.Bad,
-                $"Под синтетикой очень низкий минимум FPS (~{stress.MinFps:F0}). Проверьте перегрев/троттлинг, драйвер, разгон, фоновые процессы и при симптомах — блок питания и кабели GPU."));
+                "Игра на медленном HDD: для Path of Exile сильно рекомендуется перенести на SSD или NVMe — короче загрузки и меньше микрофризов."));
         }
-        else if (stress.MinFps < 25)
+        else if (game.SsdRecommended && gi.IsNvme)
         {
-            verdicts.Add(new VerdictItem(
-                VerdictSeverity.Warn,
-                $"Минимальный FPS в стресс-сессии умеренный (~{stress.MinFps:F0}) — при артефактах или ребутах наглядно проверьте охлаждение и БП."));
-        }
-
-        if (stress.AvgFps > 1 && stress.MaxFps > stress.AvgFps * 2.5 && stress.MinFps < stress.AvgFps * 0.4)
-        {
-            verdicts.Add(new VerdictItem(
-                VerdictSeverity.Warn,
-                "В стресс-сессии большой разброс min/max FPS — возможны просадки (фон, энергосбережение, троттлинг). Убедитесь, что в Windows выбран режим «Высокая производительность» для стационарного ПК."));
-        }
-
-        if (stress.CpuStress && stress.MinFps >= 30)
             verdicts.Add(new VerdictItem(
                 VerdictSeverity.Ok,
-                "При одновременной нагрузке на CPU минимальный FPS остаётся приемлемым — хороший знак для узких мест CPU+GPU."));
+                "Том с игрой — NVMe: оптимально для быстрых подгрузок."));
+        }
+        else if (game.SsdRecommended && gi.IsSsdClass)
+        {
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Ok,
+                "Том с игрой — SSD: хороший выбор для комфортной игры."));
+        }
+    }
+
+    private static void AppendStressVerdicts(
+        List<VerdictItem> verdicts,
+        StressTestSessionRecord? stress,
+        QuickGpuStressMetrics? quick)
+    {
+        if (quick is { Success: true, IsMeaningful: true } qScan)
+        {
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Ok,
+                $"Сканирование — стресс GPU+CPU (3×25 с, три уровня нагрузки на шейдер + все ядра CPU): общий итог мин {qScan.MinFps:F0} / ср {qScan.AvgFps:F0} / макс {qScan.MaxFps:F0} FPS (синтетика, не игра). Подробности по этапам — в сводке отчёта."));
+        }
+        else if (quick is { Success: false })
+        {
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Warn,
+                $"Встроенный стресс GPU+CPU при сканировании не выполнен: {quick.Error ?? "неизвестная причина"}."));
+        }
+
+        object? fpsSource = null;
+        if (stress is { IsMeaningful: true })
+            fpsSource = stress;
+        else if (quick is { IsMeaningful: true })
+            fpsSource = quick;
+
+        if (fpsSource is StressTestSessionRecord stLong)
+        {
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Ok,
+                $"Окно стресс-теста: {stLong.ShortSummary}"));
+
+            AppendSyntheticFpsThresholdVerdicts(verdicts, stLong.MinFps, stLong.AvgFps, stLong.MaxFps);
+
+            if (stLong.CpuStress && stLong.MinFps >= 30)
+            {
+                verdicts.Add(new VerdictItem(
+                    VerdictSeverity.Ok,
+                    "При одновременной нагрузке на CPU минимальный FPS остаётся приемлемым — хороший знак для узких мест CPU+GPU."));
+            }
+
+            return;
+        }
+
+        if (fpsSource is QuickGpuStressMetrics qm)
+            AppendSyntheticFpsThresholdVerdicts(verdicts, qm.MinFps, qm.AvgFps, qm.MaxFps);
+
+        if (stress != null && !stress.IsMeaningful)
+        {
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Ok,
+                $"Сохранённая сессия старого окна стресс-теста (короткая): {stress.ShortSummary}"));
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Warn,
+                "Эта сессия короче 20 с — для грубых выводов лучше опираться на стресс при «Сканировать» (75 с, GPU+CPU)."));
+        }
+
+        if (stress is not { IsMeaningful: true } && quick is not { Success: true, IsMeaningful: true })
+        {
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Ok,
+                "Полный стресс GPU+CPU (3×25 с, графики °C) выполняется при каждом «Сканировать»."));
+        }
+    }
+
+    private static void AppendSyntheticFpsThresholdVerdicts(
+        List<VerdictItem> verdicts,
+        double minFps,
+        double avgFps,
+        double maxFps)
+    {
+        if (minFps < 12)
+        {
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Bad,
+                $"Под синтетикой очень низкий минимум FPS (~{minFps:F0}). Проверьте перегрев/троттлинг, драйвер, разгон, фоновые процессы и при симптомах — блок питания и кабели GPU."));
+        }
+        else if (minFps < 25)
+        {
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Warn,
+                $"Минимальный FPS под синтетикой умеренный (~{minFps:F0}) — при артефактах или ребутах проверьте охлаждение и БП."));
+        }
+
+        if (avgFps > 1 && maxFps > avgFps * 2.5 && minFps < avgFps * 0.4)
+        {
+            verdicts.Add(new VerdictItem(
+                VerdictSeverity.Warn,
+                "Большой разброс min/max FPS под синтетикой — возможны просадки (фон, энергосбережение, троттлинг). Для стационарного ПК попробуйте режим «Высокая производительность» в Windows."));
+        }
+    }
+
+    /// <summary>
+    /// Для отчёта и проверки «хватает ли места под игру» используем том, где найдена/указана установка.
+    /// Если путь игры неизвестен — как раньше: том с максимальной свободной ёмкостью.
+    /// </summary>
+    private static (string Heading, string Letter, double FreeGb) ResolveStorageVolumeForReport(MachineSnapshot m)
+    {
+        var gi = m.GameInstall;
+        if (gi is { Found: true, DriveLetter: { } ch })
+        {
+            double? gb = gi.FreeGbOnVolume;
+            if (gb is null)
+            {
+                var key = ch.ToString();
+                foreach (var d in m.Disks)
+                {
+                    var letterOnly = d.Letter.TrimEnd('\\').TrimEnd(':');
+                    if (letterOnly.Equals(key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        gb = d.FreeGb;
+                        break;
+                    }
+                }
+            }
+
+            if (gb is { } g)
+                return ("Свободно на томе установки игры", $"{char.ToUpperInvariant(ch)}:", g);
+        }
+
+        var best = MaxFreeVolume(m);
+        return ("Макс. свободно на томе", best.Letter, best.FreeGb);
     }
 
     private static (string Letter, double FreeGb) MaxFreeVolume(MachineSnapshot m)
@@ -170,11 +279,17 @@ public static class AdvisorService
         if (machine.RamGb < game.RecRamGb)
             outList.Add($"Довести RAM до {game.RecRamGb} ГБ+, если слоты и платформа позволяют.");
 
-        if (game.SsdRecommended)
+        if (game.SsdRecommended && machine.GameInstall is not { Found: true, IsSsdClass: true })
             outList.Add("Установить игру на SSD (SATA или NVMe), не на медленный HDD.");
 
-        if (stress is { IsMeaningful: true, MinFps: < 20 })
-            outList.Add("По стресс-сессии: низкий минимальный FPS — почистите корпус/радиаторы, проверьте кривую вентиляторов в драйвере GPU; при отвалах/ребутах под нагрузкой — подозрение на БП или кабель питания GPU.");
+        var stressMin = stress is { IsMeaningful: true }
+            ? stress.MinFps
+            : machine.QuickGpuStress is { IsMeaningful: true }
+                ? machine.QuickGpuStress.MinFps
+                : double.PositiveInfinity;
+
+        if (stressMin < 20 && stressMin > 0 && stressMin < double.PositiveInfinity)
+            outList.Add("По синтетическому стрессу: низкий минимальный FPS — почистите корпус/радиаторы, проверьте кривую вентиляторов в драйвере GPU; при отвалах/ребутах под нагрузкой — подозрение на БП или кабель питания GPU.");
 
         if (stress is { IsMeaningful: true } &&
             machine.SystemHealthSummary.Contains("ОЗУ почти заполнено", StringComparison.Ordinal))

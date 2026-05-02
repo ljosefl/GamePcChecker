@@ -11,4 +11,6 @@ public sealed record MachineSnapshot(
     IReadOnlyList<DiskVolume> Disks,
     string GraphicsRuntimeSummary,
     IReadOnlyList<RuntimePrerequisite> RuntimePrerequisites,
-    string SystemHealthSummary);
+    string SystemHealthSummary,
+    GameInstallProbeResult? GameInstall,
+    QuickGpuStressMetrics? QuickGpuStress);

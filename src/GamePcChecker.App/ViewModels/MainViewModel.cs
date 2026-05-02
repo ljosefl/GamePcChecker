@@ -76,6 +76,10 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private GameProfileRecord? _selectedGame;
 
+    /// <summary>Необязательный путь к папке установки — чтобы привязать блок «игра и диск» к нужному тому (SSD/NVMe/HDD), если автоопределение не сработало.</summary>
+    [ObservableProperty]
+    private string? _gameInstallPathUser;
+
     [ObservableProperty]
     private AnalysisReport? _report;
 
@@ -92,7 +96,23 @@ public partial class MainViewModel : ObservableObject
         if (value != null)
             StatusMessage = null;
         if (value != null && _lastSnapshot != null)
-            Report = AdvisorService.Analyze(_lastSnapshot, value, StressTestSessionStore.Last);
+            RefreshGameInstallFromLastSnapshot(value);
+    }
+
+    partial void OnGameInstallPathUserChanged(string? value)
+    {
+        if (SelectedGame != null && _lastSnapshot != null)
+            RefreshGameInstallFromLastSnapshot(SelectedGame);
+    }
+
+    private string? OptionalInstallPath =>
+        string.IsNullOrWhiteSpace(GameInstallPathUser) ? null : GameInstallPathUser.Trim();
+
+    private void RefreshGameInstallFromLastSnapshot(GameProfileRecord game)
+    {
+        var gi = GameInstallProbeService.Describe(game.Key, _lastSnapshot!.Disks, OptionalInstallPath);
+        _lastSnapshot = _lastSnapshot! with { GameInstall = gi };
+        Report = AdvisorService.Analyze(_lastSnapshot, game, StressTestSessionStore.Last);
     }
 
     partial void OnReportChanged(AnalysisReport? value)
@@ -115,8 +135,15 @@ public partial class MainViewModel : ObservableObject
         try
         {
             var snapshot = await Task.Run(() => _hardware.Probe()).ConfigureAwait(true);
-            _lastSnapshot = snapshot;
-            Report = AdvisorService.Analyze(snapshot, SelectedGame, StressTestSessionStore.Last);
+            StatusMessage = "Стресс GPU+CPU (3×25 с)…";
+            var owner = System.Windows.Application.Current?.MainWindow;
+            var quick = owner != null
+                ? ScanStressWindow.ShowModal(owner)
+                : QuickGpuStressMetrics.Failed("Нет главного окна");
+            var gameInstall = GameInstallProbeService.Describe(SelectedGame.Key, snapshot.Disks, OptionalInstallPath);
+            var enriched = snapshot with { QuickGpuStress = quick, GameInstall = gameInstall };
+            _lastSnapshot = enriched;
+            Report = AdvisorService.Analyze(enriched, SelectedGame, StressTestSessionStore.Last);
             StatusMessage = "Готово.";
         }
         catch (Exception ex)
@@ -127,6 +154,28 @@ public partial class MainViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    [RelayCommand]
+    private void BrowseGameInstallFolder()
+    {
+        using var dlg = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = "Папка установки Path of Exile / Path of Exile 2",
+            UseDescriptionForTitle = true,
+        };
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(GameInstallPathUser) && Directory.Exists(GameInstallPathUser))
+                dlg.SelectedPath = GameInstallPathUser;
+        }
+        catch
+        {
+            // ignore invalid path for initial selection
+        }
+
+        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            GameInstallPathUser = dlg.SelectedPath;
     }
 
     [RelayCommand]
@@ -155,18 +204,6 @@ public partial class MainViewModel : ObservableObject
 
         File.WriteAllText(dlg.FileName, ReportFormatter.ToPlainText(Report), System.Text.Encoding.UTF8);
         StatusMessage = $"Сохранено: {dlg.FileName}";
-    }
-
-    [RelayCommand]
-    private void OpenStressTest()
-    {
-        if (System.Windows.Application.Current?.MainWindow == null)
-            return;
-        var w = new StressTestWindow
-        {
-            Owner = System.Windows.Application.Current.MainWindow,
-        };
-        w.Show();
     }
 
     [RelayCommand]

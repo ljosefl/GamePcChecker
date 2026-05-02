@@ -72,7 +72,9 @@ public sealed class HardwareProbeService
             disks,
             graphicsRuntimeSummary,
             runtimePrereqs,
-            systemHealth);
+            systemHealth,
+            GameInstall: null,
+            QuickGpuStress: null);
     }
 
     private static IReadOnlyList<GpuCard> MergeGpus(

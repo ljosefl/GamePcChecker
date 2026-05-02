@@ -31,14 +31,16 @@
         <Style x:Key="BtnPrimary" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource Accent}" />
             <Setter Property="Foreground" Value="White" />
-            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="Padding" Value="14,7" />
             <Setter Property="MinWidth" Value="120" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
-                                CornerRadius="4"
+                                BorderThickness="0"
+                                CornerRadius="2"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>

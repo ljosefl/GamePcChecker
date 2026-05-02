@@ -1,8 +1,16 @@
 # Релиз и распространение
 
-## Версия приложения
+## Версия приложения и журнал изменений
 
-Номер задаётся в `src/GamePcChecker.App/GamePcChecker.App.csproj` в элементе `<Version>` (сейчас `1.0.0`). При сборке он попадает в подпись сборки и в блок «версия» в правом верхнем углу главного окна.
+1. Номер версии задаётся в `src/GamePcChecker.App/GamePcChecker.App.csproj`:
+   - `<Version>` — семантическая версия (например `1.2.0`), видна в UI и в проверке обновлений;
+   - `<AssemblyVersion>` и `<FileVersion>` — обычно `мажор.минор.патч.0` (например `1.2.0.0`).
+2. После **любых** значимых правок перед коммитом/релизом:
+   - **увеличьте** версию (как минимум последний номер патча для мелких исправлений);
+   - добавьте запись в **[CHANGELOG.md](CHANGELOG.md)** в секцию `[Unreleased]` или сразу в новый блок `[x.y.z]` с датой и перечислением изменений (добавлено / изменено / исправлено).
+3. Тег на GitHub для релиза должен совпадать с версией из csproj (например `v1.2.1` для сборки `1.2.1`).
+
+Подробная история релизов — в **CHANGELOG.md** (копируется в выходную папку сборки рядом с exe).
 
 ## Сборка для других ПК
 
@@ -31,8 +39,6 @@
 
 В релиз прикрепляйте zip или exe с именем, в котором есть `win`/`x64`/`GamePcChecker` — так приложение чаще выберет правильный файл для кнопки «Скачать файл». Иначе откроется страница релиза.
 
-Тег релиза на GitHub должен совпадать с версией приложения (например тег `v1.0.0` для сборки `1.0.0`).
-
 ## Git: тег и релиз на GitHub
 
 Подставьте свой URL и имя ветки.
@@ -44,14 +50,14 @@ git commit -m "Initial release"
 git branch -M main
 git remote add origin https://github.com/ljosefl/GamePcChecker.git
 git push -u origin main
-git tag -a v1.0.0 -m "Release 1.0.0"
-git push origin v1.0.0
+git tag -a v1.2.1 -m "Release 1.2.1"
+git push origin v1.2.1
 ```
 
-Создание релиза с артефактами через GitHub CLI:
+Создание релиза с артефактами через GitHub CLI (подставьте актуальную версию и имя zip из `artifacts/`):
 
 ```bash
-gh release create v1.0.0 artifacts/GamePcChecker-v1.0.0-win-x64-selfcontained.zip --title "Game PC Checker 1.0.0" --notes "Первая публичная сборка."
+gh release create v1.2.1 artifacts/GamePcChecker-v1.2.1-win-x64-selfcontained.zip --title "Game PC Checker 1.2.1" --notes-file CHANGELOG.md
 ```
 
 Через PowerShell и токен (**Fine-grained** или classic `repo`), после сборки zip:
@@ -61,7 +67,7 @@ $env:GITHUB_TOKEN = "<ваш PAT>"
 .\scripts\create-github-release.ps1
 ```
 
-Или через веб‑интерфейс: **Releases → Create a new release → выбрать тег `v1.0.0` → заголовок «Game PC Checker 1.0.0» → перетащить** `artifacts\GamePcChecker-v1.0.0-win-x64-selfcontained.zip`.
+Или через веб‑интерфейс: **Releases → Create a new release → тег с номером версии (например `v1.2.1`) → заголовок с номером версии → в описание вставьте соответствующий фрагмент из CHANGELOG.md** → прикрепите zip из `artifacts\`.
 
 ## Новый открытый репозиторий
 

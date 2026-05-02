@@ -9,8 +9,11 @@ public static class ReportFormatter
     {
         var sb = new StringBuilder();
         sb.AppendLine($"=== {r.GameTitle} ===");
-        sb.AppendLine(r.GameNotes);
-        sb.AppendLine();
+        if (!string.IsNullOrWhiteSpace(r.GameNotes))
+        {
+            sb.AppendLine(r.GameNotes);
+            sb.AppendLine();
+        }
         sb.AppendLine("--- Ваше железо ---");
         sb.AppendLine($"ОС: {r.Snapshot.OsCaption}");
         sb.AppendLine($"CPU: {r.Snapshot.CpuName} ({r.Snapshot.CpuCores} ядер / {r.Snapshot.CpuLogical} потоков, ~{r.Snapshot.CpuMhz} МГц)");
@@ -25,10 +28,22 @@ public static class ReportFormatter
             sb.AppendLine("GPU: не определена.");
 
         sb.AppendLine($"RAM: {r.Snapshot.RamGb:F1} ГБ");
-        sb.AppendLine(r.Snapshot.GraphicsRuntimeSummary);
         sb.AppendLine(r.Snapshot.SystemHealthSummary);
-        sb.AppendLine($"Макс. свободно на одном томе: {r.MaxFreeVolumeLetter} {r.MaxFreeGb:F1} ГБ");
+        sb.AppendLine($"{r.StorageFreeSpaceHeading}: {r.MaxFreeVolumeLetter} {r.MaxFreeGb:F1} ГБ");
         sb.AppendLine();
+        sb.AppendLine("--- Установка игры и диск (эвристика) ---");
+        if (r.Snapshot.GameInstall is { } gi)
+            sb.AppendLine(gi.SummaryLine);
+        else
+            sb.AppendLine("(нет данных — выполните сканирование.)");
+        sb.AppendLine();
+        if (r.Snapshot.QuickGpuStress is { Success: true } qStress)
+        {
+            sb.AppendLine("--- Стресс GPU+CPU при сканировании (синтетика, 3×25 с) ---");
+            sb.AppendLine(qStress.ReportSummaryText);
+            sb.AppendLine();
+        }
+
         sb.AppendLine("--- Среда и рантаймы (эвристика) ---");
         foreach (var p in r.Snapshot.RuntimePrerequisites)
         {
@@ -69,8 +84,12 @@ public static class ReportFormatter
         foreach (var p in r.PeripheralTips)
             sb.AppendLine($"• {p}");
 
-        sb.AppendLine();
-        sb.AppendLine(r.Footnote);
+        if (!string.IsNullOrWhiteSpace(r.Footnote))
+        {
+            sb.AppendLine();
+            sb.AppendLine(r.Footnote);
+        }
+
         return sb.ToString();
     }
 }

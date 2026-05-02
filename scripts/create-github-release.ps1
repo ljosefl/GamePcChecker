@@ -1,7 +1,7 @@
 # Creates GitHub Release and uploads zip artifacts from artifacts/.
 # Requires: $env:GITHUB_TOKEN (fine-grained Contents write or classic repo scope)
 param(
-    [string]$Version = "1.0.0",
+    [string]$Version = "1.2.2",
     [string]$Runtime = "win-x64",
     [switch]$SelfContained = $true
 )

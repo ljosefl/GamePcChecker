@@ -8,7 +8,7 @@
 |:---|:---|
 | **Последний релиз** | https://github.com/ljosefl/GamePcChecker/releases/latest |
 | **Прямая ссылка на архив** (self-contained, после публикации релиза с этим файлом) | https://github.com/ljosefl/GamePcChecker/releases/latest/download/GamePcChecker-win-x64-selfcontained.zip |
-| **Версия в имени файла** (удобно для архива; замените тег при новой версии в `GamePcChecker.App.csproj`) | https://github.com/ljosefl/GamePcChecker/releases/download/v1.0.0/GamePcChecker-v1.0.0-win-x64-selfcontained.zip |
+| **Версия в имени файла** (замените тег при выпуске новой версии; см. `CHANGELOG.md`) | https://github.com/ljosefl/GamePcChecker/releases/download/v1.2.2/GamePcChecker-v1.2.2-win-x64-selfcontained.zip |
 
 Прямая ссылка **`…/latest/download/GamePcChecker-win-x64-selfcontained.zip`** начинает работать после того, как в **последнем** релизе на GitHub будет приложен файл с **точно таким именем** (его создаёт `scripts\publish-release.ps1 -SelfContained`).
 
@@ -60,6 +60,8 @@ dotnet run --project .\src\GamePcChecker.App\GamePcChecker.App.csproj -c Release
 ## Публикация для пользователей
 
 См. подробности в **[RELEASING.md](RELEASING.md)** — скрипт `scripts/publish-release.ps1`, артефакты в `artifacts/`, создание тега и релиза на GitHub.
+
+Список изменений по версиям — **[CHANGELOG.md](CHANGELOG.md)** (файл также кладётся рядом с `GamePcChecker.exe` при сборке).
 
 ## Ограничения (важно понимать)
 

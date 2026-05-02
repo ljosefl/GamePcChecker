@@ -4,16 +4,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:models="clr-namespace:GamePcChecker.App.Models"
+        xmlns:conv="clr-namespace:GamePcChecker.App.Converters"
         mc:Ignorable="d"
         Title="Game PC Checker"
         Height="720"
-        Width="980"
+        Width="1100"
         MinHeight="560"
-        MinWidth="800"
+        MinWidth="920"
         Background="{StaticResource BgWindow}"
         FontFamily="Segoe UI Variable, Segoe UI">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:StringToUriConverter x:Key="StringToUri" />
+        <Style x:Key="RuntimeDownloadHyperlink" TargetType="Hyperlink">
+            <Setter Property="Foreground" Value="{StaticResource Accent}" />
+            <Setter Property="TextDecorations" Value="Underline" />
+        </Style>
         <!-- Системный popup ComboBox часто светлый; явно чёрный текст и светлый фон -->
         <Style x:Key="GameComboItemStyle" TargetType="ComboBoxItem">
             <Setter Property="Foreground" Value="#FF000000" />
@@ -33,11 +39,6 @@
         <DataTemplate DataType="{x:Type models:AnalysisReport}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <TextBlock Margin="0,0,0,16"
-                               FontSize="13"
-                               Foreground="{StaticResource TextMuted}"
-                               Text="{Binding GameNotes}"
-                               TextWrapping="Wrap" />
                     <TextBlock Style="{StaticResource H2}" Text="Сводка" />
                     <StackPanel Margin="0,0,0,20">
                         <TextBlock Style="{StaticResource Body}">
@@ -91,21 +92,55 @@
                             <Run Text=" ГБ" />
                         </TextBlock>
                         <TextBlock Margin="0,6,0,0"
-                                   Style="{StaticResource Body}"
-                                   Text="{Binding Snapshot.GraphicsRuntimeSummary, Mode=OneWay}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Margin="0,6,0,0"
                                    Foreground="{StaticResource TextMuted}"
                                    Style="{StaticResource Body}"
                                    Text="{Binding Snapshot.SystemHealthSummary, Mode=OneWay}"
                                    TextWrapping="Wrap" />
                         <TextBlock Margin="0,6,0,0" Style="{StaticResource Body}">
-                            <Run FontWeight="SemiBold" Text="Макс. свободно на томе: " />
+                            <Run FontWeight="SemiBold" Text="{Binding StorageFreeSpaceHeading, Mode=OneWay}" />
+                            <Run Text=": " />
                             <Run Text="{Binding MaxFreeVolumeLetter, Mode=OneWay}" />
                             <Run Text=" " />
                             <Run Text="{Binding MaxFreeGb, Mode=OneWay, StringFormat={}{0:F1}}" />
                             <Run Text=" ГБ" />
                         </TextBlock>
+                        <StackPanel Margin="0,10,0,0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasGameInstallSection}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Style="{StaticResource H2}" Text="Установка игры и диск" />
+                            <TextBlock Style="{StaticResource Body}"
+                                       Text="{Binding Snapshot.GameInstall.SummaryLine, Mode=OneWay}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Margin="0,10,0,0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasQuickGpuStressOk}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Style="{StaticResource H2}" Text="Стресс GPU + CPU при сканировании" />
+                            <TextBlock Style="{StaticResource Body}"
+                                       Text="{Binding Snapshot.QuickGpuStress.ReportSummaryText, Mode=OneWay}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,4,0,0"
+                                       Foreground="{StaticResource TextMuted}"
+                                       FontSize="12"
+                                       Text="Три фазы по 25 с (минимум → средний → максимум нагрузки на шейдер, параллельно все ядра CPU): ниже — общий итог и разбивка по этапам; синтетика, не FPS игры."
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
                     </StackPanel>
 
                     <TextBlock Style="{StaticResource H2}" Text="Среда и рантаймы" />
@@ -127,8 +162,7 @@
                                                Style="{StaticResource Body}"
                                                Text="{Binding Detail, Mode=OneWay}"
                                                TextWrapping="Wrap" />
-                                    <TextBlock Text="{Binding LinkLine, Mode=OneWay}"
-                                               TextWrapping="Wrap">
+                                    <TextBlock TextWrapping="Wrap">
                                         <TextBlock.Style>
                                             <Style BasedOn="{StaticResource Body}" TargetType="TextBlock">
                                                 <Style.Triggers>
@@ -138,6 +172,12 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </TextBlock.Style>
+                                        <Run Text="Скачать: " />
+                                        <Hyperlink Style="{StaticResource RuntimeDownloadHyperlink}"
+                                                   NavigateUri="{Binding InstallUrl, Converter={StaticResource StringToUri}, Mode=OneWay}"
+                                                   RequestNavigate="RuntimeDownload_RequestNavigate">
+                                            <Run Text="{Binding InstallUrl, Mode=OneWay}" />
+                                        </Hyperlink>
                                     </TextBlock>
                                 </StackPanel>
                             </DataTemplate>
@@ -209,10 +249,6 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock FontSize="12"
-                               Foreground="{StaticResource TextMuted}"
-                               Style="{StaticResource Body}"
-                               Text="{Binding Footnote}" />
                 </StackPanel>
             </ScrollViewer>
         </DataTemplate>
@@ -233,10 +269,6 @@
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
                 <TextBlock Style="{StaticResource H1}" Text="Game PC Checker" />
-                <TextBlock FontSize="13"
-                           Foreground="{StaticResource TextMuted}"
-                           Text="Профиль: Path of Exile / Path of Exile 2 · видеопамять через DXGI (достоверный объём для дискретной GPU)"
-                           TextWrapping="Wrap" />
             </StackPanel>
             <StackPanel Grid.Column="1"
                         MaxWidth="340"
@@ -254,24 +286,6 @@
                            Text="{Binding UpdateStatusHint}"
                            TextAlignment="Right"
                            TextWrapping="Wrap" />
-                <TextBlock Margin="0,6,0,0"
-                           HorizontalAlignment="Right"
-                           FontSize="10"
-                           Foreground="{StaticResource TextMuted}"
-                           Text="Чтобы проверять релизы на GitHub: переименуйте github-update.example.json в github-update.json и укажите owner и repo."
-                           TextAlignment="Right"
-                           TextWrapping="Wrap">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding UpdateCheckConfigured}" Value="False">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
                 <StackPanel Margin="0,10,0,0"
                             HorizontalAlignment="Right"
                             Orientation="Horizontal">
@@ -321,24 +335,57 @@
             </StackPanel>
         </Grid>
 
-        <DockPanel Grid.Row="1" Margin="0,0,0,12" LastChildFill="False">
-            <StackPanel VerticalAlignment="Center" DockPanel.Dock="Left" Orientation="Horizontal">
-                <TextBlock Margin="0,0,10,0"
-                           VerticalAlignment="Center"
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Margin="0,0,10,0"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMuted}"
+                               Text="Игра" />
+                    <ComboBox MinWidth="280"
+                              Padding="8,6"
+                              Background="#FFFFFFFF"
+                              BorderBrush="{StaticResource BorderSubtle}"
+                              DisplayMemberPath="Title"
+                              Foreground="#FF000000"
+                              ItemsSource="{Binding GameChoices}"
+                              ItemContainerStyle="{StaticResource GameComboItemStyle}"
+                              SelectedItem="{Binding SelectedGame}" />
+                </StackPanel>
+                <TextBlock Margin="0,10,0,4"
+                           FontSize="11"
                            Foreground="{StaticResource TextMuted}"
-                           Text="Игра" />
-                <ComboBox MinWidth="300"
-                          Padding="8,6"
-                          Background="#FFFFFFFF"
-                          BorderBrush="{StaticResource BorderSubtle}"
-                          DisplayMemberPath="Title"
-                          Foreground="#FF000000"
-                          ItemsSource="{Binding GameChoices}"
-                          ItemContainerStyle="{StaticResource GameComboItemStyle}"
-                          SelectedItem="{Binding SelectedGame}" />
+                           Text="Папка с игрой (по желанию) — чтобы проверить том (SSD / NVMe / HDD), если автоопределение не нашло путь."
+                           TextWrapping="Wrap" />
+                <Grid Margin="0,2,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="200" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0"
+                             MinWidth="200"
+                             Padding="8,6"
+                             VerticalContentAlignment="Center"
+                             Background="#FFFFFFFF"
+                             BorderBrush="{StaticResource BorderSubtle}"
+                             Foreground="#FF000000"
+                             Text="{Binding GameInstallPathUser, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button Grid.Column="1"
+                            Margin="8,0,0,0"
+                            Padding="12,6"
+                            VerticalAlignment="Center"
+                            Command="{Binding BrowseGameInstallFolderCommand}"
+                            Content="Обзор…"
+                            Style="{StaticResource BtnGhost}" />
+                </Grid>
             </StackPanel>
-            <StackPanel HorizontalAlignment="Right"
-                        DockPanel.Dock="Right"
+            <StackPanel Grid.Row="1"
+                        Margin="0,14,0,0"
+                        HorizontalAlignment="Right"
                         Orientation="Horizontal">
                 <Button Margin="0,0,10,0"
                         Command="{Binding ScanCommand}"
@@ -351,12 +398,8 @@
                 <Button Command="{Binding SaveReportCommand}"
                         Content="Сохранить…"
                         Style="{StaticResource BtnGhost}" />
-                <Button Margin="10,0,0,0"
-                        Command="{Binding OpenStressTestCommand}"
-                        Content="Стресс-тест GPU/CPU"
-                        Style="{StaticResource BtnGhost}" />
             </StackPanel>
-        </DockPanel>
+        </Grid>
 
         <TextBlock Grid.Row="2"
                    Margin="0,0,0,12"
