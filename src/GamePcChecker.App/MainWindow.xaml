@@ -1,0 +1,423 @@
+﻿<Window x:Class="GamePcChecker.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:models="clr-namespace:GamePcChecker.App.Models"
+        mc:Ignorable="d"
+        Title="Game PC Checker"
+        Height="720"
+        Width="980"
+        MinHeight="560"
+        MinWidth="800"
+        Background="{StaticResource BgWindow}"
+        FontFamily="Segoe UI Variable, Segoe UI">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <!-- Системный popup ComboBox часто светлый; явно чёрный текст и светлый фон -->
+        <Style x:Key="GameComboItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="#FF000000" />
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="Padding" Value="8,6" />
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="#FFE3F2FD" />
+                    <Setter Property="Foreground" Value="#FF000000" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#FFBBDEFB" />
+                    <Setter Property="Foreground" Value="#FF000000" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <DataTemplate DataType="{x:Type models:AnalysisReport}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Margin="0,0,0,16"
+                               FontSize="13"
+                               Foreground="{StaticResource TextMuted}"
+                               Text="{Binding GameNotes}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Style="{StaticResource H2}" Text="Сводка" />
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Style="{StaticResource Body}">
+                            <Run FontWeight="SemiBold" Text="ОС: " />
+                            <Run Text="{Binding Snapshot.OsCaption, Mode=OneWay}" />
+                        </TextBlock>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Body}">
+                            <Run FontWeight="SemiBold" Text="CPU: " />
+                            <Run Text="{Binding Snapshot.CpuName, Mode=OneWay}" />
+                            <Run Text=" · " />
+                            <Run Text="{Binding Snapshot.CpuCores, Mode=OneWay}" />
+                            <Run Text=" ядер / " />
+                            <Run Text="{Binding Snapshot.CpuLogical, Mode=OneWay}" />
+                            <Run Text=" потоков" />
+                        </TextBlock>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Body}">
+                            <Run FontWeight="SemiBold" Text="Оценка CPU (условная): " />
+                            <Run Text="{Binding CpuScore, Mode=OneWay}" />
+                        </TextBlock>
+                        <StackPanel Margin="0,6,0,0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasPrimaryGpu}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Style="{StaticResource Body}">
+                                <Run FontWeight="SemiBold" Text="GPU: " />
+                                <Run Text="{Binding PrimaryGpu.Name, Mode=OneWay}" />
+                                <Run Text=" · " />
+                                <Run Text="{Binding PrimaryGpu.GpuVendorName, Mode=OneWay}" />
+                                <Run Text=" · VRAM: " />
+                                <Run Text="{Binding PrimaryGpu.VramGb, Mode=OneWay, StringFormat={}{0:F1}}" />
+                                <Run Text=" ГБ [" />
+                                <Run Text="{Binding PrimaryGpu.VramMeasuredBy, Mode=OneWay}" />
+                                <Run Text="] · Драйвер " />
+                                <Run Text="{Binding PrimaryGpu.DriverVersion, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Body}">
+                            <Run FontWeight="SemiBold" Text="Оценка GPU (условная): " />
+                            <Run Text="{Binding GpuScore, Mode=OneWay}" />
+                        </TextBlock>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Body}">
+                            <Run FontWeight="SemiBold" Text="RAM: " />
+                            <Run Text="{Binding Snapshot.RamGb, Mode=OneWay, StringFormat={}{0:F1}}" />
+                            <Run Text=" ГБ" />
+                        </TextBlock>
+                        <TextBlock Margin="0,6,0,0"
+                                   Style="{StaticResource Body}"
+                                   Text="{Binding Snapshot.GraphicsRuntimeSummary, Mode=OneWay}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Margin="0,6,0,0"
+                                   Foreground="{StaticResource TextMuted}"
+                                   Style="{StaticResource Body}"
+                                   Text="{Binding Snapshot.SystemHealthSummary, Mode=OneWay}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Body}">
+                            <Run FontWeight="SemiBold" Text="Макс. свободно на томе: " />
+                            <Run Text="{Binding MaxFreeVolumeLetter, Mode=OneWay}" />
+                            <Run Text=" " />
+                            <Run Text="{Binding MaxFreeGb, Mode=OneWay, StringFormat={}{0:F1}}" />
+                            <Run Text=" ГБ" />
+                        </TextBlock>
+                    </StackPanel>
+
+                    <TextBlock Style="{StaticResource H2}" Text="Среда и рантаймы" />
+                    <TextBlock Margin="0,0,0,12"
+                               Foreground="{StaticResource TextMuted}"
+                               FontSize="12"
+                               Text="Проверка эвристическая: VC++ redist, .NET Framework, WebView2, .NET Desktop, справка по Java. Ссылки — официальные; при сомнениях ориентируйтесь на лаунчер игры."
+                               TextWrapping="Wrap" />
+                    <ItemsControl Margin="0,0,0,20" ItemsSource="{Binding Snapshot.RuntimePrerequisites}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:RuntimePrerequisite}">
+                                <StackPanel Margin="0,0,0,10">
+                                    <TextBlock Style="{StaticResource Body}">
+                                        <Run FontWeight="SemiBold" Text="{Binding Title, Mode=OneWay}" />
+                                        <Run Text=" — " />
+                                        <Run Text="{Binding StatusLabel, Mode=OneWay}" />
+                                    </TextBlock>
+                                    <TextBlock Foreground="{StaticResource TextMuted}"
+                                               Style="{StaticResource Body}"
+                                               Text="{Binding Detail, Mode=OneWay}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding LinkLine, Mode=OneWay}"
+                                               TextWrapping="Wrap">
+                                        <TextBlock.Style>
+                                            <Style BasedOn="{StaticResource Body}" TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasLink, Mode=OneWay}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Margin="0,0,0,16">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasStressSession}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <TextBlock Style="{StaticResource H2}" Text="Стресс-тест (в вердикте)" />
+                        <TextBlock Style="{StaticResource Body}"
+                                   Text="{Binding StressSession.ShortSummary, Mode=OneWay}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <TextBlock Style="{StaticResource H2}" Text="Вердикт" />
+                    <ItemsControl Margin="0,0,0,20" ItemsSource="{Binding Verdicts}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:VerdictItem}">
+                                <Border Margin="0,0,0,8"
+                                        Padding="12,10"
+                                        Background="#FF1E1E1E"
+                                        BorderBrush="{StaticResource BorderSubtle}"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                    <DockPanel>
+                                        <Border Width="4"
+                                                Margin="0,0,12,0"
+                                                VerticalAlignment="Stretch"
+                                                Background="{Binding Severity, Converter={StaticResource SeverityBrush}}"
+                                                CornerRadius="2"
+                                                DockPanel.Dock="Left" />
+                                        <TextBlock Style="{StaticResource Body}" Text="{Binding Text}" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Style="{StaticResource H2}" Text="Что улучшить" />
+                    <ItemsControl Margin="0,0,0,20" ItemsSource="{Binding UpgradeSteps}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="0,0,0,6" Style="{StaticResource Body}">
+                                    <Run Text="• " />
+                                    <Run Text="{Binding Mode=OneWay}" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Style="{StaticResource H2}" Text="Периферия и комфорт" />
+                    <ItemsControl Margin="0,0,0,16" ItemsSource="{Binding PeripheralTips}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="0,0,0,6" Style="{StaticResource Body}">
+                                    <Run Text="• " />
+                                    <Run Text="{Binding Mode=OneWay}" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock FontSize="12"
+                               Foreground="{StaticResource TextMuted}"
+                               Style="{StaticResource Body}"
+                               Text="{Binding Footnote}" />
+                </StackPanel>
+            </ScrollViewer>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Style="{StaticResource H1}" Text="Game PC Checker" />
+                <TextBlock FontSize="13"
+                           Foreground="{StaticResource TextMuted}"
+                           Text="Профиль: Path of Exile / Path of Exile 2 · видеопамять через DXGI (достоверный объём для дискретной GPU)"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Grid.Column="1"
+                        MaxWidth="340"
+                        Margin="16,0,0,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top">
+                <TextBlock HorizontalAlignment="Right"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMuted}"
+                           Text="{Binding AppVersionLabel}" />
+                <TextBlock Margin="0,4,0,0"
+                           HorizontalAlignment="Right"
+                           FontSize="11"
+                           Foreground="{StaticResource TextMuted}"
+                           Text="{Binding UpdateStatusHint}"
+                           TextAlignment="Right"
+                           TextWrapping="Wrap" />
+                <TextBlock Margin="0,6,0,0"
+                           HorizontalAlignment="Right"
+                           FontSize="10"
+                           Foreground="{StaticResource TextMuted}"
+                           Text="Чтобы проверять релизы на GitHub: переименуйте github-update.example.json в github-update.json и укажите owner и repo."
+                           TextAlignment="Right"
+                           TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding UpdateCheckConfigured}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <StackPanel Margin="0,10,0,0"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding UpdateAvailable}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <Border Padding="10,8"
+                            Background="#332D2640"
+                            BorderBrush="{StaticResource BorderSubtle}"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                        <StackPanel>
+                            <TextBlock FontSize="11"
+                                       Foreground="{StaticResource TextMuted}"
+                                       Text="Доступно обновление" />
+                            <TextBlock Margin="0,2,0,8"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimary}"
+                                       Text="{Binding UpdateLatestVersionLabel}" />
+                            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                                <Button Margin="0,0,8,0"
+                                        Command="{Binding OpenPreferredDownloadCommand}"
+                                        Content="Скачать файл"
+                                        Style="{StaticResource BtnPrimary}"
+                                        Visibility="{Binding HasPreferredDownload, Converter={StaticResource BoolToVis}}" />
+                                <Button Command="{Binding OpenReleasePageCommand}"
+                                        Content="Страница релиза"
+                                        Style="{StaticResource BtnGhost}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                <Button Margin="0,8,0,0"
+                        HorizontalAlignment="Right"
+                        Command="{Binding RefreshUpdateCheckCommand}"
+                        Content="Проверить обновления"
+                        FontSize="11"
+                        Padding="10,5"
+                        Style="{StaticResource BtnGhost}" />
+            </StackPanel>
+        </Grid>
+
+        <DockPanel Grid.Row="1" Margin="0,0,0,12" LastChildFill="False">
+            <StackPanel VerticalAlignment="Center" DockPanel.Dock="Left" Orientation="Horizontal">
+                <TextBlock Margin="0,0,10,0"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMuted}"
+                           Text="Игра" />
+                <ComboBox MinWidth="300"
+                          Padding="8,6"
+                          Background="#FFFFFFFF"
+                          BorderBrush="{StaticResource BorderSubtle}"
+                          DisplayMemberPath="Title"
+                          Foreground="#FF000000"
+                          ItemsSource="{Binding GameChoices}"
+                          ItemContainerStyle="{StaticResource GameComboItemStyle}"
+                          SelectedItem="{Binding SelectedGame}" />
+            </StackPanel>
+            <StackPanel HorizontalAlignment="Right"
+                        DockPanel.Dock="Right"
+                        Orientation="Horizontal">
+                <Button Margin="0,0,10,0"
+                        Command="{Binding ScanCommand}"
+                        Content="Сканировать"
+                        Style="{StaticResource BtnPrimary}" />
+                <Button Margin="0,0,10,0"
+                        Command="{Binding CopyReportCommand}"
+                        Content="Копировать отчёт"
+                        Style="{StaticResource BtnGhost}" />
+                <Button Command="{Binding SaveReportCommand}"
+                        Content="Сохранить…"
+                        Style="{StaticResource BtnGhost}" />
+                <Button Margin="10,0,0,0"
+                        Command="{Binding OpenStressTestCommand}"
+                        Content="Стресс-тест GPU/CPU"
+                        Style="{StaticResource BtnGhost}" />
+            </StackPanel>
+        </DockPanel>
+
+        <TextBlock Grid.Row="2"
+                   Margin="0,0,0,12"
+                   FontSize="12"
+                   Foreground="{StaticResource TextMuted}"
+                   Text="{Binding StatusMessage}" />
+
+        <Grid Grid.Row="3">
+            <Border Padding="16"
+                    Background="{StaticResource BgCard}"
+                    BorderBrush="{StaticResource BorderSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <Grid>
+                    <TextBlock HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="14"
+                               Foreground="{StaticResource TextMuted}"
+                               Text="Выберите игру и нажмите «Сканировать»."
+                               TextAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasReport}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <ContentControl Content="{Binding Report}">
+                        <ContentControl.Style>
+                            <Style TargetType="ContentControl">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasReport}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ContentControl.Style>
+                    </ContentControl>
+                </Grid>
+            </Border>
+
+            <Grid Background="#80000000"
+                  IsHitTestVisible="True"
+                  Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                <Border Padding="20"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Background="#FF252526"
+                        BorderBrush="{StaticResource BorderSubtle}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                    <TextBlock FontSize="14"
+                               Foreground="{StaticResource TextPrimary}"
+                               Text="Сканирование…" />
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

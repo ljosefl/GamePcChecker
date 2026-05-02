@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GamePcChecker.App/GamePcChecker.App.csproj" />
+  </Folder>
+</Solution>
