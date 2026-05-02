@@ -15,6 +15,7 @@ function Show-CursorHint {
 
 --- GITHUB_TOKEN ---
   Used by REST API from PowerShell (upload release assets).
+  Use a fine-grained token: only this repo, Contents Read+write (not "full access to everything").
 
 '@
     Write-Host $t -ForegroundColor DarkGray

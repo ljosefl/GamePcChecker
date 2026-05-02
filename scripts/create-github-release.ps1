@@ -1,5 +1,7 @@
 # Creates GitHub Release and uploads zip artifacts from artifacts/.
-# Requires: $env:GITHUB_TOKEN (fine-grained Contents write or classic repo scope)
+# Token: fine-grained PAT -> only repo GamePcChecker, Contents Read+write, Metadata read.
+#        (Classic: scope "repo" is enough; "все права" не нужны — только риск утечки.)
+# Env: GITHUB_TOKEN or GH_TOKEN
 param(
     [string]$Version = "1.2.2",
     [string]$Runtime = "win-x64",
@@ -65,13 +67,13 @@ Platform: Windows x64 ($platformNote)
 Source: tag ``$Tag``.
 "@
 
-$createBody = @{
-    tag_name                 = $Tag
-    name                     = "Game PC Checker $Version"
-    body                     = $releaseBody
-    draft                    = $false
-    generate_release_notes   = $false
-} | ConvertTo-Json
+# Без -Depth и лишних полей PS 5.1 даёт кривой JSON; generate_release_notes в create — не обязателен.
+$createBody = (@{
+    tag_name = $Tag
+    name     = "Game PC Checker $Version"
+    body     = $releaseBody
+    draft    = $false
+} | ConvertTo-Json -Depth 5)
 
 $releaseUri = "https://api.github.com/repos/$Owner/$Repo/releases"
 $releaseByTagUri = "https://api.github.com/repos/$Owner/$Repo/releases/tags/$Tag"
