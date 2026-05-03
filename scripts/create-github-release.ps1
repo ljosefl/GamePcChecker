@@ -3,7 +3,7 @@
 #        (Classic: scope "repo" is enough; "все права" не нужны — только риск утечки.)
 # Env: GITHUB_TOKEN or GH_TOKEN
 param(
-    [string]$Version = "1.2.2",
+    [string]$Version = "1.2.3",
     [string]$Runtime = "win-x64",
     [switch]$SelfContained = $true
 )
@@ -62,7 +62,7 @@ Platform: Windows x64 ($platformNote)
 
 1. Download ``$zipName`` from Assets (or the stable-named zip).
 2. Extract and run ``GamePcChecker.exe``.
-3. For updates: rename ``github-update.example.json`` to ``github-update.json``.
+3. For updates: copy ``etc\github-update.example.json`` to the app folder as ``github-update.json`` (or set ``GAMEPCCHECKER_GITHUB_UPDATE``).
 
 Source: tag ``$Tag``.
 "@

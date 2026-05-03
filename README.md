@@ -8,11 +8,11 @@
 |:---|:---|
 | **Последний релиз** | https://github.com/ljosefl/GamePcChecker/releases/latest |
 | **Прямая ссылка на архив** (self-contained, после публикации релиза с этим файлом) | https://github.com/ljosefl/GamePcChecker/releases/latest/download/GamePcChecker-win-x64-selfcontained.zip |
-| **Версия в имени файла** (замените тег при выпуске новой версии; см. `CHANGELOG.md`) | https://github.com/ljosefl/GamePcChecker/releases/download/v1.2.2/GamePcChecker-v1.2.2-win-x64-selfcontained.zip |
+| **Версия в имени файла** (замените тег при выпуске новой версии; см. `CHANGELOG.md`) | https://github.com/ljosefl/GamePcChecker/releases/download/v1.2.3/GamePcChecker-v1.2.3-win-x64-selfcontained.zip |
 
 Прямая ссылка **`…/latest/download/GamePcChecker-win-x64-selfcontained.zip`** начинает работать после того, как в **последнем** релизе на GitHub будет приложен файл с **точно таким именем** (его создаёт `scripts\publish-release.ps1 -SelfContained`).
 
-Распакуйте zip и запустите **`GamePcChecker.exe`** из папки.
+Распакуйте zip и запустите **`GamePcChecker.exe`** из корня папки. Рядом создаются каталоги **`data`**, **`temp`**, **`etc`**: журнал **`CHANGELOG.md`** и **`github-update.example.json`** лежат в **`etc\`**; рабочий **`github-update.json`** при необходимости по-прежнему размещают **рядом с exe** в корне.
 
 ---
 
@@ -38,7 +38,7 @@
 
 ## Обновления приложения
 
-При наличии файла `github-update.json` рядом с `GamePcChecker.exe` (см. `github-update.example.json`) приложение при запуске запрашивает **последний релиз** на GitHub и при более новой версии показывает ссылки на **страницу релиза** и на **скачивание** вложения (предпочтительно zip под Windows x64).
+При наличии файла `github-update.json` рядом с `GamePcChecker.exe` (шаблон — **`etc\github-update.example.json`** в составе архива) приложение при запуске запрашивает **последний релиз** на GitHub и при более новой версии показывает ссылки на **страницу релиза** и на **скачивание** вложения (предпочтительно zip под Windows x64).
 
 Альтернатива: переменная среды `GAMEPCCHECKER_GITHUB_UPDATE` в формате `владелец/репо`.
 
@@ -61,7 +61,7 @@ dotnet run --project .\src\GamePcChecker.App\GamePcChecker.App.csproj -c Release
 
 См. подробности в **[RELEASING.md](RELEASING.md)** — скрипт `scripts/publish-release.ps1`, артефакты в `artifacts/`, создание тега и релиза на GitHub.
 
-Список изменений по версиям — **[CHANGELOG.md](CHANGELOG.md)** (файл также кладётся рядом с `GamePcChecker.exe` при сборке).
+Список изменений по версиям — **[CHANGELOG.md](CHANGELOG.md)** (в готовой публикации копия также лежит в **`etc\CHANGELOG.md`**).
 
 ## Ограничения (важно понимать)
 

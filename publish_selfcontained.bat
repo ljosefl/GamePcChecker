@@ -14,12 +14,21 @@ dotnet publish "src\GamePcChecker.App\GamePcChecker.App.csproj" ^
   --self-contained true ^
   -p:PublishSingleFile=true ^
   -p:IncludeNativeLibrariesForSelfExtract=true ^
+  -p:EnableCompressionInSingleFile=true ^
   -p:DebugType=none ^
   -o "%OUT%"
 
 if errorlevel 1 (
   echo.
   echo Ошибка сборки.
+  pause
+  exit /b 1
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\organize-publish-layout.ps1" -PublishDir "%OUT%"
+
+if errorlevel 1 (
+  echo Ошибка раскладки папок.
   pause
   exit /b 1
 )

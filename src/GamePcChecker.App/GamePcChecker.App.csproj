@@ -12,9 +12,9 @@
     <AssemblyName>GamePcChecker</AssemblyName>
     <Product>Game PC Checker</Product>
     <Description>Проверка ПК на соответствие играм (Path of Exile / PoE 2)</Description>
-    <Version>1.2.2</Version>
-    <AssemblyVersion>1.2.2.0</AssemblyVersion>
-    <FileVersion>1.2.2.0</FileVersion>
+    <Version>1.2.3</Version>
+    <AssemblyVersion>1.2.3.0</AssemblyVersion>
+    <FileVersion>1.2.3.0</FileVersion>
     <Company>GamePcChecker</Company>
     <RepositoryUrl>https://github.com/ljosefl/GamePcChecker</RepositoryUrl>
     <PackageProjectUrl>https://github.com/ljosefl/GamePcChecker</PackageProjectUrl>

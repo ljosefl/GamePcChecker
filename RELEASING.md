@@ -10,7 +10,7 @@
    - добавьте запись в **[CHANGELOG.md](CHANGELOG.md)** в секцию `[Unreleased]` или сразу в новый блок `[x.y.z]` с датой и перечислением изменений (добавлено / изменено / исправлено).
 3. Тег на GitHub для релиза должен совпадать с версией из csproj (например `v1.2.1` для сборки `1.2.1`).
 
-Подробная история релизов — в **CHANGELOG.md** (копируется в выходную папку сборки рядом с exe).
+Подробная история релизов — в **CHANGELOG.md** (в поставке копия переносится в **`etc\CHANGELOG.md`**, см. `scripts/organize-publish-layout.ps1`).
 
 ## Сборка для других ПК
 
@@ -20,7 +20,9 @@
 .\scripts\publish-release.ps1 -SelfContained
 ```
 
-Появится папка `artifacts/publish-win-x64-selfcontained` и zip `artifacts/GamePcChecker-v…-win-x64-selfcontained.zip`. Загрузите zip в GitHub Release как основной артефакт (удобнее для пользователей, чем один exe).
+Появится папка `artifacts/publish-win-x64-selfcontained` (в корне — **`GamePcChecker.exe`**, каталоги **`data`**, **`temp`**, **`etc`**) и zip `artifacts/GamePcChecker-v…-win-x64-selfcontained.zip`. Загрузите zip в GitHub Release как основной артефакт.
+
+По умолчанию сборка **single-file** (один exe в корне + подпапки). Много `.dll` рядом с exe: **`.\scripts\publish-release.ps1 -SelfContained -MultiFile`**.
 
 Вариант **без** встроенного рантайма (меньше размер, на ПК должен быть установлен **.NET Desktop** той же основной версии, что и `TargetFramework` в проекте):
 
@@ -28,14 +30,14 @@
 .\scripts\publish-release.ps1
 ```
 
-Опция `-SingleFile` у скрипта собирает один exe (медленнее старт из‑за распаковки); для WPF обычно предпочтительнее папка публикации или zip.
+Первый запуск single-file может быть чуть медленнее из‑за распаковки. Вариант **`-MultiFile`** — классическая папка публикации без single-file.
 
 ## Релиз на GitHub без локального PAT (Actions)
 
 В репозитории включён workflow **[Release](.github/workflows/release.yml)**:
 
 - При **push тега** вида `v*` (например после `git push origin v1.2.3`) GitHub сам собирает self-contained zip и создаёт/обновляет **Release** с вложениями.
-- Если тег **уже есть**, а Release с файлами — нет: **Actions → Release → Run workflow**, в поле ввести тег **`v1.2.2`** и запустить. Артефакты появятся у этого тега без повторного `git push`.
+- Если тег **уже есть**, а Release с файлами — нет: **Actions → Release → Run workflow**, в поле ввести тег (например **`v1.2.3`**) и запустить. Артефакты появятся у этого тега без повторного `git push`.
 
 Локальный сценарий с PAT по-прежнему: `.\scripts\create-github-release.ps1` (переменная `GITHUB_TOKEN` или `GH_TOKEN`).
 

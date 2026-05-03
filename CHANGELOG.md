@@ -7,6 +7,12 @@
 
 <!-- Перед релизом перенесите пункты в новый блок [x.y.z], поднимите версию в csproj. -->
 
+## [1.2.3] — 2026-05-03
+
+### Добавлено
+
+- Скрипт **`scripts/organize-publish-layout.ps1`**: в поставке каталоги **`data`**, **`temp`**, **`etc`**; **`CHANGELOG.md`** и **`github-update.example.json`** в **`etc\`**. **`publish-release.ps1`** по умолчанию собирает **single-file** self-contained, архив zip через **tar**; **`-MultiFile`** — папка с множеством dll. GitHub Actions вызывают тот же `publish-release.ps1`.
+
 ## [1.2.2] — 2026-05-01
 
 ### Исправлено
